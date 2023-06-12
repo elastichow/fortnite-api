@@ -1,20 +1,15 @@
 package tech.chowyijiu.fortnite_api;
 
-import cn.hutool.http.HttpException;
 import cn.hutool.http.HttpRequest;
-import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
-import lombok.extern.slf4j.Slf4j;
-import tech.chowyijiu.fortnite_api.entity.shop.ShopEntry;
-import tech.chowyijiu.fortnite_api.enums.AccountType;
-import tech.chowyijiu.fortnite_api.enums.ImageSource;
-import tech.chowyijiu.fortnite_api.enums.TimeWindow;
+import tech.chowyijiu.fortnite_api.entity.shop.BrShop;
+import tech.chowyijiu.fortnite_api.entity.shop.Entries;
 import tech.chowyijiu.fortnite_api.exception.FortniteApiException;
 import tech.chowyijiu.fortnite_api.utils.StringUtil;
 
 import java.util.*;
 
-
+@SuppressWarnings("unused")
 public class FortniteApi {
 
     private static final String API_URL = "https://fortnite-api.com";
@@ -42,15 +37,12 @@ public class FortniteApi {
         return getData(apiRequest("/v2/shop/br/combined").execute().body());
     }
 
-    public static List<ShopEntry> shopEntries() {
-        List<ShopEntry> shopEntries = new ArrayList<>();
-        JSONObject shop = getShop();
-        String[] types = {"featured", "daily", "votes", "voteWinners"};
-        for (String type : types) {
-            Optional.ofNullable(shop.get(type)).ifPresent(item -> {
-                shopEntries.addAll(((JSONArray) ((JSONObject) item).get("entries")).toList(ShopEntry.class));
-            });
-        }
+
+    public static List<Entries> shopEntries() {
+        List<Entries> shopEntries = new ArrayList<>();
+        BrShop brShop = getShop().toJavaObject(BrShop.class);
+        shopEntries.addAll(brShop.getFeatured().getEntries());
+        shopEntries.addAll(brShop.getDaily().getEntries());
         return shopEntries;
     }
 
@@ -86,4 +78,5 @@ public class FortniteApi {
         StringUtil.hasLength(imageSource, str -> httpRequest.form("image", str));
         return getData(httpRequest.execute().body());
     }
+
 }
