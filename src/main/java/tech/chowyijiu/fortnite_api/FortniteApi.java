@@ -4,6 +4,7 @@ import cn.hutool.http.HttpRequest;
 import com.alibaba.fastjson2.JSONObject;
 import tech.chowyijiu.fortnite_api.entity.shop.BrShop;
 import tech.chowyijiu.fortnite_api.entity.shop.Entries;
+import tech.chowyijiu.fortnite_api.entity.stat.BrStat;
 import tech.chowyijiu.fortnite_api.exception.FortniteApiException;
 import tech.chowyijiu.fortnite_api.utils.StringUtil;
 
@@ -16,7 +17,7 @@ public class FortniteApi {
 
     private static JSONObject getData(final String body) {
         JSONObject bodyJsonObj = JSONObject.parseObject(body);
-        Integer status = (Integer) bodyJsonObj.get("status");
+        int status = (int) bodyJsonObj.get("status");
         switch (status) {
             case 200:
                 return (JSONObject) bodyJsonObj.get("data");
@@ -25,22 +26,23 @@ public class FortniteApi {
             case 403:
             case 404:
                 throw new FortniteApiException((String) bodyJsonObj.get("error"));
+            default:
+                throw new FortniteApiException("Invalid status code: " + status);
         }
-        return null;
     }
 
     public static HttpRequest apiRequest(String urlSuffix) {
         return HttpRequest.get(API_URL + urlSuffix).form("language", "zh-CN");
     }
 
-    public static JSONObject getShop() {
+    public static JSONObject getShopCombined() {
         return getData(apiRequest("/v2/shop/br/combined").execute().body());
     }
 
 
     public static List<Entries> shopEntries() {
         List<Entries> shopEntries = new ArrayList<>();
-        BrShop brShop = getShop().toJavaObject(BrShop.class);
+        BrShop brShop = getShopCombined().toJavaObject(BrShop.class);
         shopEntries.addAll(brShop.getFeatured().getEntries());
         shopEntries.addAll(brShop.getDaily().getEntries());
         return shopEntries;
@@ -70,13 +72,13 @@ public class FortniteApi {
         headers.put("Authorization", apiKey);
     }
 
-    public JSONObject brStats(String accountName, String accountType, String timeWindow, String imageSource) {
+    public BrStat brStats(String accountName, String accountType, String timeWindow, String imageSource) {
         HttpRequest httpRequest = apiRequest("/v2/stats/br/v2").addHeaders(headers);
         StringUtil.hasLength(accountName, str -> httpRequest.form("name", str));
         StringUtil.hasLength(accountType, str -> httpRequest.form("accountType", str));
         StringUtil.hasLength(timeWindow, str -> httpRequest.form("timeWindow", str));
         StringUtil.hasLength(imageSource, str -> httpRequest.form("image", str));
-        return getData(httpRequest.execute().body());
+        return getData(httpRequest.execute().body()).toJavaObject(BrStat.class);
     }
 
 }
